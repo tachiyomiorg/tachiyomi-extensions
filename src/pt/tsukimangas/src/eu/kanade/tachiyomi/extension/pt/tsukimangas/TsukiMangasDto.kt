@@ -27,6 +27,7 @@ data class TsukiPaginatedDto(
 data class TsukiMangaDto(
     val artist: String? = "",
     val author: String? = "",
+    val format: Int? = 1,
     val genres: List<TsukiGenreDto> = emptyList(),
     val id: Int,
     val poster: String? = "",

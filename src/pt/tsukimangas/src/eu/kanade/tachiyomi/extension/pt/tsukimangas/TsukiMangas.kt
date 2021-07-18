@@ -95,7 +95,7 @@ class TsukiMangas : HttpSource(), ConfigurableSource {
     private fun popularMangaItemParse(manga: TsukiMangaDto) = SManga.create().apply {
         val poster = manga.poster?.substringBefore("?")
 
-        title = manga.title
+        title = manga.title + (if (manga.format == NOVEL_FORMAT_ID) " (Novel)" else "")
         thumbnail_url = baseUrl + (if (poster.isNullOrEmpty()) EMPTY_COVER else "/imgs/$poster")
         url = "/obra/${manga.id}/${manga.url}"
     }
@@ -117,7 +117,7 @@ class TsukiMangas : HttpSource(), ConfigurableSource {
     private fun latestMangaItemParse(manga: TsukiMangaDto) = SManga.create().apply {
         val poster = manga.poster?.substringBefore("?")
 
-        title = manga.title
+        title = manga.title + (if (manga.format == NOVEL_FORMAT_ID) " (Novel)" else "")
         thumbnail_url = baseUrl + (if (poster.isNullOrEmpty()) EMPTY_COVER else "/imgs/$poster")
         url = "/obra/${manga.id}/${manga.url}"
     }
@@ -203,7 +203,7 @@ class TsukiMangas : HttpSource(), ConfigurableSource {
     private fun searchMangaItemParse(manga: TsukiMangaDto) = SManga.create().apply {
         val poster = manga.poster?.substringBefore("?")
 
-        title = manga.title
+        title = manga.title + (if (manga.format == NOVEL_FORMAT_ID) " (Novel)" else "")
         thumbnail_url = baseUrl + (if (poster.isNullOrEmpty()) EMPTY_COVER else "/imgs/$poster")
         url = "/obra/${manga.id}/${manga.url}"
     }
@@ -235,7 +235,7 @@ class TsukiMangas : HttpSource(), ConfigurableSource {
         val mangaDto = json.decodeFromString<TsukiMangaDto>(response.body!!.string())
         val poster = mangaDto.poster?.substringBefore("?")
 
-        title = mangaDto.title
+        title = mangaDto.title + (if (mangaDto.format == NOVEL_FORMAT_ID) " (Novel)" else "")
         thumbnail_url = baseUrl + (if (poster.isNullOrEmpty()) EMPTY_COVER else "/imgs/$poster")
         description = mangaDto.synopsis.orEmpty()
         status = mangaDto.status.orEmpty().toStatus()
@@ -571,6 +571,8 @@ class TsukiMangas : HttpSource(), ConfigurableSource {
             "Aguarde a reativação pelo site para continuar utilizando."
 
         private const val EMPTY_COVER = "/ext/errorcapa.jpg"
+
+        private const val NOVEL_FORMAT_ID = 4
 
         private val DATE_FORMATTER by lazy { SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH) }
 
