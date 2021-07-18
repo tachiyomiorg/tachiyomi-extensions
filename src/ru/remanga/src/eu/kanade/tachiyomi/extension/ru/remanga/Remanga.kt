@@ -2,11 +2,11 @@ package eu.kanade.tachiyomi.extension.ru.remanga
 
 import BookDto
 import BranchesDto
+import ChunksPageDto
 import GenresDto
 import LibraryDto
 import MangaDetDto
 import PageDto
-import ChunksPageDto
 import PageWrapperDto
 import SeriesWrapperDto
 import UserDto
@@ -345,20 +345,27 @@ class Remanga : ConfigurableSource, HttpSource() {
         }
     }
 
+    private fun fixLink(link: String): String {
+        if (!link.startsWith("http")) {
+            return "https://remanga.org$link"
+        }
+        return link
+    }
+
     @TargetApi(Build.VERSION_CODES.N)
     override fun pageListParse(response: Response): List<Page> {
         val body = response.body?.string()!!
         return try {
             val page = json.decodeFromString<SeriesWrapperDto<PageDto>>(body)
             page.content.pages.filter { it.height > 10 }.map {
-                Page(it.page, "", it.link)
+                Page(it.page, "", fixLink(it.link))
             }
         } catch (e: SerializationException) {
             val page = json.decodeFromString<SeriesWrapperDto<ChunksPageDto>>(body)
             val result = mutableListOf<Page>()
             page.content.pages.forEach {
                 it.filter { page -> page.height > 10 }.forEach { page ->
-                    result.add(Page(result.size, "", page.link))
+                    result.add(Page(result.size, "", fixLink(page.link)))
                 }
             }
             return result
