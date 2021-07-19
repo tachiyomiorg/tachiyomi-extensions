@@ -220,7 +220,7 @@ class LectorManga : ConfigurableSource, ParsedHttpSource() {
     private fun oneShotChapterFromElement(element: Element) = SChapter.create().apply {
         url = element.select("div.row > .text-right > a").attr("href")
         name = "One Shot"
-        scanlator = element.select("div.col-md-6.text-truncate")?.text()
+        scanlator = element.select("div.col-12.col-sm-12.col-md-4.text-truncate span")?.text()
         date_upload = element.select("span.badge.badge-primary.p-2").first()?.text()?.let { parseChapterDate(it) }
             ?: 0
     }
@@ -228,7 +228,7 @@ class LectorManga : ConfigurableSource, ParsedHttpSource() {
     private fun regularChapterFromElement(chapterName: String, info: Element, number: Float) = SChapter.create().apply {
         url = info.select("div.row > .text-right > a").attr("href")
         name = chapterName
-        scanlator = info.select("div.col-md-6.text-truncate")?.text()
+        scanlator = info.select("div.col-12.col-sm-12.col-md-4.text-truncate span")?.text()
         date_upload = info.select("span.badge.badge-primary.p-2").first()?.text()?.let {
             parseChapterDate(it)
         } ?: 0
