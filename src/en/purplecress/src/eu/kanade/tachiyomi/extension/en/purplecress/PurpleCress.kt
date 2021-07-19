@@ -121,13 +121,35 @@ class PurpleCress : HttpSource() {
         return Observable.just(page.imageUrl)
     }
 
-    override fun imageUrlRequest(page: Page): Request = throw UnsupportedOperationException("Not used")
+    companion object {
+        const val URL_SEARCH_PREFIX = "purplecress_url:"
+    }
 
-    override fun imageUrlParse(response: Response): String = throw UnsupportedOperationException("Not used")
-
-    override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> = Observable.just(MangasPage(emptyList(), false))
+    override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
+        if (query.startsWith(URL_SEARCH_PREFIX)) {
+            val manga = SManga.create().apply {
+                url = query.removePrefix(URL_SEARCH_PREFIX)
+            }
+            return fetchMangaDetails(manga).map {
+                MangasPage(listOf(it), false)
+            }
+        }
+        return fetchPopularManga(page).map {
+            mangasPage ->
+            MangasPage(
+                mangasPage.mangas.filter {
+                    it.title.contains(query, true)
+                },
+                mangasPage.hasNextPage
+            )
+        }
+    }
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request = throw UnsupportedOperationException("Not used")
 
     override fun searchMangaParse(response: Response): MangasPage = throw UnsupportedOperationException("Not used")
+
+    override fun imageUrlRequest(page: Page): Request = throw UnsupportedOperationException("Not used")
+
+    override fun imageUrlParse(response: Response): String = throw UnsupportedOperationException("Not used")
 }

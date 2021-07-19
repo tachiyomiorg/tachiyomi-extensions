@@ -5,7 +5,7 @@ ext {
     extName = 'Purple Cress'
     pkgNameSuffix = 'en.purplecress'
     extClass = '.PurpleCress'
-    extVersionCode = 1
+    extVersionCode = 2
     libVersion = '1.2'
 }
 
