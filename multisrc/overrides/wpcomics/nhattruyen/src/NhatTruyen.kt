@@ -5,6 +5,7 @@ import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.Page
 import okhttp3.Request
+import okhttp3.Headers
 import java.text.SimpleDateFormat
 import java.util.Locale
 
