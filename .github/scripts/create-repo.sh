@@ -46,3 +46,15 @@ done | jq -sr '[.[]]' > index.json
 jq -c '.' < index.json > index.min.json
 
 cat index.json
+
+echo
+echo "executing inspector"
+echo
+
+curl "https://raw.githubusercontent.com/AriaMoradi/tachiyomi-extensions-inspector/repo/Inspector-latest.jar" -o "Inspector-latest.jar"
+
+java -jar Inspector-latest.jar ../apk inspector.txt
+
+cat inspector.txt
+
+rm Inspector-latest.jar
